@@ -1,0 +1,106 @@
+@media (max-width: 900px) {
+  .trajectory-panel {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .command-backdrop {
+    align-items: flex-start;
+    padding: 9vh 10px 10px;
+  }
+
+  .command-input {
+    height: 48px;
+    gap: 7px;
+    padding: 0 9px;
+  }
+
+  .command-input input {
+    font-size: 10px;
+  }
+
+  .answer-body {
+    max-height: 65vh;
+    overflow: auto;
+    padding: 11px;
+  }
+
+  .diff-columns {
+    grid-template-columns: 1fr;
+  }
+
+  .diff-columns pre {
+    max-height: 170px;
+    font-size: 8px;
+  }
+
+  .diff-dialog-foot,
+  .precommit-config {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .rootcause-detail {
+    padding: 10px;
+  }
+
+  .evidence-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .rootcause-columns,
+  .time-snapshot-grid,
+  .dna-layout,
+  .before-after,
+  .precommit-bottom,
+  .impact-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .dna-visual {
+    min-height: 250px;
+  }
+
+  .dna-row {
+    grid-template-columns: 97px minmax(25px, 1fr) 20px 31px;
+    gap: 5px;
+  }
+
+  .compare-arrow {
+    transform: rotate(90deg);
+  }
+
+  .proposal-card {
+    align-items: stretch;
+    flex-direction: column;
+    margin-top: -7px;
+  }
+
+  .proposal-card > div:last-child {
+    align-items: flex-start;
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+
+  .sample-context {
+    flex: 1 0 100%;
+  }
+
+  .impact-prediction {
+    grid-template-columns: 1fr;
+  }
+
+  .snapshot-head {
+    flex-direction: column;
+  }
+
+  .recommendation-footer > div {
+    flex-wrap: wrap;
+  }
+
+  .recommendation-footer > div button {
+    min-width: 78px;
+    flex: 1 1 42%;
+  }
+}

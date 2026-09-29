@@ -1,0 +1,128 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Repository {
+  id          String     @id @default(cuid())
+  owner       String
+  name        String
+  fullName    String     @unique
+  htmlUrl     String
+  defaultBranch String
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  branches    Branch[]
+  analyses    Analysis[]
+}
+
+model Branch {
+  id           String       @id @default(cuid())
+  repositoryId String
+  name         String
+  repository   Repository   @relation(fields: [repositoryId], references: [id], onDelete: Cascade)
+  analyses     Analysis[]
+  @@unique([repositoryId, name])
+}
+
+model Analysis {
+  id              String       @id @default(cuid())
+  repositoryId    String
+  branchId        String
+  commitSha       String
+  analyzerVersion String
+  status          String       @default("QUEUED")
+  stage           String       @default("queued")
+  progress        Int          @default(0)
+  error           String?
+  startedAt       DateTime     @default(now())
+  completedAt     DateTime?
+  repository      Repository   @relation(fields: [repositoryId], references: [id], onDelete: Cascade)
+  branch          Branch       @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  files           File[]
+  issues          Issue[]
+  dependencies    Dependency[]
+  metrics         Metric[]
+  aiInsights      AIInsight[]
+  @@index([repositoryId, startedAt])
+  @@index([branchId, commitSha])
+}
+
+model File {
+  id               String     @id @default(cuid())
+  analysisId       String
+  path             String
+  language         String
+  lineCount        Int
+  complexity       Int
+  maintainability  Float
+  content          String
+  analysis         Analysis   @relation(fields: [analysisId], references: [id], onDelete: Cascade)
+  issues           Issue[]
+  outgoingEdges    Dependency[] @relation("DependencySource")
+  incomingEdges    Dependency[] @relation("DependencyTarget")
+  @@unique([analysisId, path])
+  @@index([analysisId, path])
+}
+
+model Issue {
+  id             String     @id @default(cuid())
+  analysisId     String
+  fileId         String?
+  fingerprint    String
+  severity       String
+  category       String
+  title          String
+  description    String
+  line           Int
+  metric         Json
+  impact         String
+  estimatedEffort Float
+  recommendation String
+  status         String     @default("OPEN")
+  analysis       Analysis   @relation(fields: [analysisId], references: [id], onDelete: Cascade)
+  file           File?      @relation(fields: [fileId], references: [id], onDelete: SetNull)
+  @@unique([analysisId, fingerprint])
+  @@index([analysisId, severity, category])
+}
+
+model Dependency {
+  id             String     @id @default(cuid())
+  analysisId     String
+  sourceFileId   String
+  targetFileId   String
+  kind           String     @default("IMPORT")
+  circular       Boolean    @default(false)
+  analysis       Analysis   @relation(fields: [analysisId], references: [id], onDelete: Cascade)
+  sourceFile     File       @relation("DependencySource", fields: [sourceFileId], references: [id], onDelete: Cascade)
+  targetFile     File       @relation("DependencyTarget", fields: [targetFileId], references: [id], onDelete: Cascade)
+  @@unique([analysisId, sourceFileId, targetFileId, kind])
+  @@index([analysisId, sourceFileId])
+}
+
+model Metric {
+  id         String   @id @default(cuid())
+  analysisId String
+  name       String
+  value      Float
+  unit       String?
+  analysis   Analysis @relation(fields: [analysisId], references: [id], onDelete: Cascade)
+  @@unique([analysisId, name])
+}
+
+model AIInsight {
+  id         String   @id @default(cuid())
+  analysisId String
+  kind       String
+  title      String
+  body       String
+  evidence   Json
+  provider   String
+  createdAt  DateTime @default(now())
+  analysis   Analysis @relation(fields: [analysisId], references: [id], onDelete: Cascade)
+  @@index([analysisId, createdAt])
+}
