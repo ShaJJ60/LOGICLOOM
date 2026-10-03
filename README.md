@@ -4,7 +4,7 @@ Logicloom is a React/TypeScript code-intelligence prototype with a GitHub-backed
 
 ## Local development
 
-Requirements: Node.js 18.18+ (20 LTS recommended), npm, and a PostgreSQL database. Neon works as a hosted PostgreSQL option.
+Requirements: Node.js 20.19+ (or 22.12+), npm, and a PostgreSQL database. Neon works as a hosted PostgreSQL option.
 
 1. Install dependencies with `npm install`.
 2. Copy `.env.example` to `.env` and set `DATABASE_URL`. Set a server-side `GITHUB_TOKEN` to analyze private repositories or raise GitHub API rate limits.

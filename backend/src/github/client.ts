@@ -10,28 +10,56 @@ const EXCLUDED = /(^|\/)(node_modules|vendor|dist|build|coverage|\.next)\//;
 const extension = (path: string) => path.slice(path.lastIndexOf(".")).toLowerCase();
 
 async function github<T>(path: string): Promise<T> {
-  let response: Response;
-  try {
-    response = await fetch(`${GITHUB_API}${path}`, {
-    headers: {
-      Accept: "application/vnd.github+json",
-      "X-GitHub-Api-Version": "2022-11-28",
-      "User-Agent": "Logicloom-Engineering-Intelligence",
-      ...(config.GITHUB_TOKEN ? { Authorization: `Bearer ${config.GITHUB_TOKEN}` } : {}),
-    },
-    signal: AbortSignal.timeout(60_000),
-    });
-  } catch (error) {
-    const timedOut = error instanceof Error && (error.name === "TimeoutError" || error.name === "AbortError");
-    const message = timedOut
-    ? `GitHub API request timed out while fetching ${path}.`
-    : "Could not reach the GitHub API. Check your network connection and try again.";
-    throw Object.assign(new Error(message), { status: timedOut ? 504 : 502, cause: error });
+  const request = async (authenticated: boolean): Promise<Response> => {
+    try {
+      return await fetch(`${GITHUB_API}${path}`, {
+        headers: {
+          Accept: "application/vnd.github+json",
+          "X-GitHub-Api-Version": "2022-11-28",
+          "User-Agent": "Logicloom-Engineering-Intelligence",
+          ...(authenticated && config.GITHUB_TOKEN ? { Authorization: `Bearer ${config.GITHUB_TOKEN}` } : {}),
+        },
+        signal: AbortSignal.timeout(60_000),
+      });
+    } catch (error) {
+      const timedOut = error instanceof Error && (error.name === "TimeoutError" || error.name === "AbortError");
+      const message = timedOut
+        ? `GitHub API request timed out while fetching ${path}.`
+        : "Could not reach the GitHub API. Check your network connection and try again.";
+      throw Object.assign(new Error(message), { status: timedOut ? 504 : 502, cause: error });
+    }
+  };
+
+  let response = await request(Boolean(config.GITHUB_TOKEN));
+  let body = await response.clone().json().catch(() => null) as { message?: string } | null;
+  const rateLimited = response.status === 429 ||
+    (response.status === 403 && (response.headers.get("x-ratelimit-remaining") === "0" || /rate limit/i.test(body?.message ?? "")));
+
+  // A stale token should not prevent access to public repositories.
+  if (config.GITHUB_TOKEN && (response.status === 401 || response.status === 403) && !rateLimited) {
+    const anonymousResponse = await request(false);
+    if (anonymousResponse.ok) response = anonymousResponse;
+    else {
+      response = anonymousResponse;
+      body = await response.clone().json().catch(() => null) as { message?: string } | null;
+    }
   }
+
   if (!response.ok) {
-    const message = response.status === 404 ? "Repository or branch was not found or is not accessible." :
-      response.status === 401 || response.status === 403 ? "GitHub denied access. Check repository visibility, token permissions, and API rate limits." :
-        `GitHub API returned ${response.status}.`;
+    const apiMessage = body?.message;
+    const remaining = response.headers.get("x-ratelimit-remaining");
+    const reset = response.headers.get("x-ratelimit-reset");
+    let message: string;
+    if (response.status === 404) {
+      message = "Repository or branch was not found or is not accessible.";
+    } else if (rateLimited || response.status === 429 || remaining === "0") {
+      const resetTime = reset ? new Date(Number(reset) * 1000).toLocaleTimeString() : undefined;
+      message = `GitHub API rate limit exceeded.${resetTime ? ` Try again after ${resetTime}.` : " Try again later or configure a server-side GITHUB_TOKEN."}`;
+    } else if (response.status === 401 || response.status === 403) {
+      message = `GitHub denied access${apiMessage ? `: ${apiMessage}` : ". Check repository visibility and token permissions."}`;
+    } else {
+      message = `GitHub API returned ${response.status}${apiMessage ? `: ${apiMessage}` : "."}`;
+    }
     throw Object.assign(new Error(message), { status: response.status });
   }
   return response.json() as Promise<T>;

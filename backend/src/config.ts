@@ -5,7 +5,10 @@ const envSchema = z.object({
   PORT: z.coerce.number().int().positive().default(3001),
   DATABASE_URL: z.string().url().optional(),
   GITHUB_TOKEN: z.string().optional(),
-  AI_BASE_URL: z.string().url().optional(),
+  AI_BASE_URL: z.preprocess(
+    (value) => (value === "" ? undefined : value),
+    z.string().url().optional(),
+  ),
   AI_API_KEY: z.string().optional(),
   AI_MODEL: z.string().default("gpt-4o-mini"),
   FRONTEND_ORIGIN: z.string().url().default("http://localhost:5173"),

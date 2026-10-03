@@ -8,7 +8,7 @@ import { router } from "./routes.js";
 const app = express();
 app.disable("x-powered-by");
 app.use(cors({ origin: config.FRONTEND_ORIGIN }));
-app.use(express.json({ limit: "32kb" }));
+app.use(express.json({ limit: "128kb" }));
 app.get("/api/health", (_request, response) => response.json({ status: "ok", service: "logicloom-api" }));
 app.use("/api", router);
 app.use((_request, response) => response.status(404).json({ error: { code: "NOT_FOUND", message: "API route not found." } }));

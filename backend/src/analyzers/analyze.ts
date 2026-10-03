@@ -67,6 +67,7 @@ export async function analyzeSource(
     metrics: {
       filesAnalyzed: files.length,
       linesAnalyzed: files.reduce((sum, file) => sum + file.lineCount, 0),
+      maintainability: Math.round(averageMaintainability),
       codeQuality: Math.max(0, Math.round(averageMaintainability - uniqueFindings.filter((finding) => finding.severity === "HIGH" || finding.severity === "CRITICAL").length * 3)),
       codebaseHealth: Math.max(0, Math.round(100 - uniqueFindings.length * 1.7)),
       technicalDebtHours: uniqueFindings.reduce((sum, finding) => sum + finding.estimatedEffort, 0),
